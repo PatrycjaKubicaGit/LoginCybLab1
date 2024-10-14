@@ -1,0 +1,56 @@
+﻿@model IEnumerable<Microsoft.AspNetCore.Identity.IdentityUser>
+
+@{
+    ViewData["Title"] = "Lista użytkowników";
+}
+
+<h2>Lista użytkowników</h2>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Email</th>
+            <th>UserName</th>
+            <th>Zablokowane do</th>
+            <th>Akcje</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in Model)
+        {
+            <tr>
+                <td>@user.Email</td>
+                <td>@user.UserName</td>
+                <td>
+                    @if (user.LockoutEnd != null && user.LockoutEnd > DateTimeOffset.UtcNow)
+                    {
+                        <span>@user.LockoutEnd.Value.ToString("yyyy-MM-dd HH:mm")</span>
+                    }
+                    else
+                    {
+                        <span>Nie zablokowany</span>
+                    }
+                </td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@user.Id" class="btn btn-warning">Edytuj</a>
+                    <a asp-action="Delete" asp-route-id="@user.Id" class="btn btn-danger">Usuń</a>
+                    
+                    @if (user.LockoutEnd != null && user.LockoutEnd > DateTimeOffset.UtcNow)
+                    {
+                        <a asp-action="Unlock" asp-route-id="@user.Id" class="btn btn-success">Odblokuj</a>
+                    }
+                    else{
+                        <form asp-action="Lock">
+                            <input type="hidden" name="id" value="@user.Id" />
+                            <label for="days">Liczba dni blokady:</label>
+                            <input type="number" name="days" min="1" required />
+                            <button type="submit">Blokuj użytkownika</button>
+                        </form>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a asp-action="Create" class="btn btn-primary">Dodaj nowego użytkownika</a>
