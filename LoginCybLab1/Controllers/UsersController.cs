@@ -9,6 +9,8 @@ using Microsoft.EntityFrameworkCore;
 using LoginCybLab1.Data;
 using LoginCybLab1.Views.ViewModels;
 using Microsoft.AspNetCore.Authorization;
+using System.Configuration;
+using LoginCybLab1.Models;
 
 namespace LoginCybLab1.Controllers
 {
@@ -17,15 +19,46 @@ namespace LoginCybLab1.Controllers
     {
         private readonly UserManager<IdentityUser> _userManager;
         private readonly SignInManager<IdentityUser> _signInManager;
+        private readonly IConfiguration _configuration;
 
-        public UsersController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager)
+        public UsersController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, IConfiguration configuration)
         {
             _userManager = userManager;
             _signInManager = signInManager;
+            _configuration = configuration;
         }
 
-        // READ: Wyświetlenie listy użytkowników
-        public async Task<IActionResult> Index()
+
+        // GET: Wyświetlenie formularza zarządzania polityką haseł
+        [HttpGet]
+        public IActionResult ManagePasswordPolicy()
+        {
+            var passwordOptions = _configuration.GetSection("PasswordPolicy").Get<PasswordPolicyViewModel>();
+            return View(passwordOptions);
+        }
+
+        // POST: Zapisanie nowych ustawień polityki haseł
+        [HttpPost]
+        public IActionResult ManagePasswordPolicy(PasswordPolicyViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                // Zapisz nowe ustawienia w pliku konfiguracyjnym lub bazie danych
+                var config = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json", optional: false, reloadOnChange: true).Build();
+                config["PasswordPolicy:RequireDigit"] = model.RequireDigit.ToString();
+                config["PasswordPolicy:RequireLowercase"] = model.RequireLowercase.ToString();
+                config["PasswordPolicy:RequireUppercase"] = model.RequireUppercase.ToString();
+                config["PasswordPolicy:RequireNonAlphanumeric"] = model.RequireNonAlphanumeric.ToString();
+                config["PasswordPolicy:RequiredLength"] = model.RequiredLength.ToString();
+
+                return RedirectToAction("Index");
+            }
+
+            return View(model);
+        }
+
+    // READ: Wyświetlenie listy użytkowników
+    public async Task<IActionResult> Index()
         {
             var users = await _userManager.Users.ToListAsync();
             return View(users);
@@ -212,5 +245,8 @@ namespace LoginCybLab1.Controllers
 
             return View("Index");
         }
+
+
+
     }
 }

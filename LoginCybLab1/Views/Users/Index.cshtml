@@ -34,17 +34,18 @@
                 <td>
                     <a asp-action="Edit" asp-route-id="@user.Id" class="btn btn-warning">Edytuj</a>
                     <a asp-action="Delete" asp-route-id="@user.Id" class="btn btn-danger">Usuń</a>
-                    
+
                     @if (user.LockoutEnd != null && user.LockoutEnd > DateTimeOffset.UtcNow)
                     {
                         <a asp-action="Unlock" asp-route-id="@user.Id" class="btn btn-success">Odblokuj</a>
                     }
-                    else{
-                        <form asp-action="Lock">
+                    else
+                    {
+                        <form asp-action="Lock" method="post" class="d-inline">
                             <input type="hidden" name="id" value="@user.Id" />
                             <label for="days">Liczba dni blokady:</label>
                             <input type="number" name="days" min="1" required />
-                            <button type="submit">Blokuj użytkownika</button>
+                            <button type="submit" class="btn btn-danger">Blokuj użytkownika</button>
                         </form>
                     }
                 </td>
@@ -54,3 +55,4 @@
 </table>
 
 <a asp-action="Create" class="btn btn-primary">Dodaj nowego użytkownika</a>
+<a asp-action="ManagePasswordPolicy" class="btn btn-secondary">Edytuj politykę haseł</a> <!-- Dodany przycisk -->

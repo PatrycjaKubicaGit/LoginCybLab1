@@ -1,6 +1,7 @@
 using LoginCybLab1.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
+using LoginCybLab1.Models;
 
 namespace LoginCybLab1
 {
@@ -20,7 +21,23 @@ namespace LoginCybLab1
 
             builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
                 .AddRoles<IdentityRole>().AddEntityFrameworkStores<CybDbContext>();
-               
+
+            var passwordOptions = builder.Configuration.GetSection("PasswordPolicy").Get<PasswordPolicyViewModel>();
+            if (passwordOptions != null)
+                builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
+                {
+                    // Odczytywanie ustawieñ polityki hase³ z pliku konfiguracyjnego
+                    var passwordOptions = builder.Configuration.GetSection("PasswordPolicy").Get<PasswordPolicyViewModel>();
+
+                    options.Password.RequireDigit = passwordOptions.RequireDigit;
+                    options.Password.RequiredLength = passwordOptions.RequiredLength;
+                    options.Password.RequireNonAlphanumeric = passwordOptions.RequireNonAlphanumeric;
+                    options.Password.RequireUppercase = passwordOptions.RequireUppercase;
+                    options.Password.RequireLowercase = passwordOptions.RequireLowercase;
+                })
+                .AddEntityFrameworkStores<CybDbContext>()
+                .AddDefaultTokenProviders();
+
 
             builder.Services.AddRazorPages();
 
@@ -79,6 +96,26 @@ namespace LoginCybLab1
                     await userManager.CreateAsync(user, password);
 
                     await userManager.AddToRoleAsync(user, "Admin");
+                }
+            }
+
+            using (var scope = app.Services.CreateScope())
+            {
+                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+
+                string email = "test@test.com";
+                string password = "Admin123@";
+
+                if (await userManager.FindByEmailAsync(email) == null)
+                {
+                    var user = new IdentityUser();
+                    user.UserName = email;
+                    user.Email = email;
+                    user.EmailConfirmed = true;
+
+                    await userManager.CreateAsync(user, password);
+
+                    await userManager.AddToRoleAsync(user, "User");
                 }
             }
             app.Run();
