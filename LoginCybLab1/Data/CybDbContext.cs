@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using LoginCybLab1.Views.ViewModels;
+using LoginCybLab1.Models;
 
 namespace LoginCybLab1.Data
 {
@@ -10,5 +11,6 @@ namespace LoginCybLab1.Data
         {
         }
         public DbSet<LoginCybLab1.Views.ViewModels.UserViewModel> UserViewModel { get; set; } = default!;
+        public DbSet<PasswordHistory> PasswordHistories { get; set; }
     }
 }

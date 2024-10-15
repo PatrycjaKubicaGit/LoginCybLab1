@@ -2,6 +2,7 @@ using LoginCybLab1.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using LoginCybLab1.Models;
+using LoginCybLab1.Validator;
 
 namespace LoginCybLab1
 {
@@ -22,11 +23,15 @@ namespace LoginCybLab1
             builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
                 .AddRoles<IdentityRole>().AddEntityFrameworkStores<CybDbContext>();
 
+            builder.Services.AddIdentity<IdentityUser, IdentityRole>()
+                .AddPasswordValidator<CustomPasswordValidator>()
+                .AddEntityFrameworkStores<CybDbContext>();
+
+
             var passwordOptions = builder.Configuration.GetSection("PasswordPolicy").Get<PasswordPolicyViewModel>();
             if (passwordOptions != null)
                 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
                 {
-                    // Odczytywanie ustawieñ polityki hase³ z pliku konfiguracyjnego
                     var passwordOptions = builder.Configuration.GetSection("PasswordPolicy").Get<PasswordPolicyViewModel>();
 
                     options.Password.RequireDigit = passwordOptions.RequireDigit;
@@ -43,11 +48,9 @@ namespace LoginCybLab1
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
             if (!app.Environment.IsDevelopment())
             {
                 app.UseExceptionHandler("/Home/Error");
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
 
@@ -84,6 +87,27 @@ namespace LoginCybLab1
                 var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
 
                 string email = "admin1@admin.com";
+                string password = "Admin123@";
+
+                if (await userManager.FindByEmailAsync(email) == null)
+                {
+                    var user = new IdentityUser();
+                    user.UserName = email;
+                    user.Email = email;
+                    user.EmailConfirmed = true;
+
+                    await userManager.CreateAsync(user, password);
+
+                    await userManager.AddToRoleAsync(user, "Admin");
+                }
+            }   
+            
+            
+            using (var scope = app.Services.CreateScope())
+            {
+                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+
+                string email = "admin@admin.com";
                 string password = "Admin123@";
 
                 if (await userManager.FindByEmailAsync(email) == null)

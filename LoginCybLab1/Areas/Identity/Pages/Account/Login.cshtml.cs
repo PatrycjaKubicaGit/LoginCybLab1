@@ -128,7 +128,7 @@ namespace LoginCybLab1.Areas.Identity.Pages.Account
                 }
                 else
                 {
-                    ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+                    ModelState.AddModelError(string.Empty, "Invalid login attempt (wrong login or password)");
                     return Page();
                 }
             }

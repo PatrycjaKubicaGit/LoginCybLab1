@@ -43,7 +43,6 @@ namespace LoginCybLab1.Controllers
         {
             if (ModelState.IsValid)
             {
-                // Zapisz nowe ustawienia w pliku konfiguracyjnym lub bazie danych
                 var config = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json", optional: false, reloadOnChange: true).Build();
                 config["PasswordPolicy:RequireDigit"] = model.RequireDigit.ToString();
                 config["PasswordPolicy:RequireLowercase"] = model.RequireLowercase.ToString();
@@ -57,7 +56,6 @@ namespace LoginCybLab1.Controllers
             return View(model);
         }
 
-    // READ: Wyświetlenie listy użytkowników
     public async Task<IActionResult> Index()
         {
             var users = await _userManager.Users.ToListAsync();
