@@ -14,7 +14,10 @@ public class CustomPasswordValidator : IPasswordValidator<IdentityUser>
 
     public async Task<IdentityResult> ValidateAsync(UserManager<IdentityUser> manager, IdentityUser user, string password)
     {
-        var previousPasswords = _context.PasswordHistories
+        if(_context.PasswordHistory == null)
+            return IdentityResult.Success;
+
+        var previousPasswords = _context.PasswordHistory
             .Where(ph => ph.UserId == user.Id)
             .OrderByDescending(ph => ph.DateChanged)
             .Take(12)

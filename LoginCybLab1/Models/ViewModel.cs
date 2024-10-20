@@ -7,4 +7,5 @@ public class PasswordPolicyViewModel
     public bool RequireUppercase { get; set; }
     public bool RequireNonAlphanumeric { get; set; }
     public int RequiredLength { get; set; }
+    public DateTime ExpiryDate { get; set; }
 }

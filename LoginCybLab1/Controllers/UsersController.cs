@@ -71,22 +71,34 @@ namespace LoginCybLab1.Controllers
 
         // CREATE: POST - Tworzenie nowego użytkownika z użyciem Identity
         [HttpPost]
+        [HttpPost]
         public async Task<IActionResult> Create(string email, string password)
         {
             if (ModelState.IsValid)
             {
-                var user = new IdentityUser { UserName = email, Email = email };
+                var user = new ApplicationUser
+                {
+                    UserName = email,
+                    Email = email,
+                    PasswordExpirationDate = DateTime.UtcNow.AddDays(30), 
+                    MustChangePassword = false
+                };
+
                 var result = await _userManager.CreateAsync(user, password);
                 if (result.Succeeded)
+                {
                     return RedirectToAction("Index");
+                }
 
                 foreach (var error in result.Errors)
+                {
                     ModelState.AddModelError("", error.Description);
-
+                }
             }
 
             return View();
         }
+
 
         // UPDATE: GET - Pobranie danych użytkownika do edycji
         [HttpGet]

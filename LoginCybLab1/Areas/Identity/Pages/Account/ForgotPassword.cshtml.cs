@@ -89,7 +89,7 @@ namespace LoginCybLab1.Areas.Identity.Pages.Account
                 var hashedNewPassword = _userManager.PasswordHasher.HashPassword(user, newPassword);
 
                 // Sprawdź, czy nowe hasło różni się od ostatnich 12
-                var previousPasswords = _context.PasswordHistories
+                var previousPasswords = _context.PasswordHistory
                     .Where(ph => ph.UserId == user.Id)
                     .OrderByDescending(ph => ph.DateChanged)
                     .Take(12)
@@ -113,17 +113,17 @@ namespace LoginCybLab1.Areas.Identity.Pages.Account
                     DateChanged = DateTime.UtcNow
                 };
 
-                _context.PasswordHistories.Add(passwordHistory);
+                _context.PasswordHistory.Add(passwordHistory);
 
                 // Usuń hasła starsze niż 12, jeśli istnieje więcej
-                var userPasswordHistory = _context.PasswordHistories
+                var userPasswordHistory = _context.PasswordHistory
                     .Where(ph => ph.UserId == user.Id)
                     .OrderByDescending(ph => ph.DateChanged)
                     .ToList();
 
                 if (userPasswordHistory.Count > 12)
                 {
-                    _context.PasswordHistories.RemoveRange(userPasswordHistory.Skip(12));
+                    _context.PasswordHistory.RemoveRange(userPasswordHistory.Skip(12));
                 }
 
                 await _context.SaveChangesAsync();

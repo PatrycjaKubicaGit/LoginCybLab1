@@ -14,45 +14,37 @@ namespace LoginCybLab1
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();
+
+            // Konfiguracja bazy danych
             builder.Services.AddDbContext<CybDbContext>(options =>
             {
                 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
                 options.UseSqlServer(connectionString);
             });
 
-            builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
-                .AddRoles<IdentityRole>().AddEntityFrameworkStores<CybDbContext>();
-
-            builder.Services.AddIdentity<IdentityUser, IdentityRole>()
-                .AddPasswordValidator<CustomPasswordValidator>()
-                .AddEntityFrameworkStores<CybDbContext>();
-
-
-            var passwordOptions = builder.Configuration.GetSection("PasswordPolicy").Get<PasswordPolicyViewModel>();
-            if (passwordOptions != null)
-                builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
+            // Dodaj to¿samoœæ z niestandardowym walidatorem has³a
+            builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
+            {
+                // Pobranie opcji polityki has³a z konfiguracji
+                var passwordOptions = builder.Configuration.GetSection("PasswordPolicy").Get<PasswordPolicyViewModel>();
+                if (passwordOptions != null)
                 {
-                    var passwordOptions = builder.Configuration.GetSection("PasswordPolicy").Get<PasswordPolicyViewModel>();
-
                     options.Password.RequireDigit = passwordOptions.RequireDigit;
                     options.Password.RequiredLength = passwordOptions.RequiredLength;
                     options.Password.RequireNonAlphanumeric = passwordOptions.RequireNonAlphanumeric;
                     options.Password.RequireUppercase = passwordOptions.RequireUppercase;
                     options.Password.RequireLowercase = passwordOptions.RequireLowercase;
-                })
-                .AddEntityFrameworkStores<CybDbContext>()
-                .AddDefaultTokenProviders();
+                }
+            })
+            .AddRoles<IdentityRole>()
+            .AddPasswordValidator<CustomPasswordValidator>()
+            .AddEntityFrameworkStores<CybDbContext>()
+            .AddDefaultTokenProviders();
 
-
+            // Dodaj Razor Pages
             builder.Services.AddRazorPages();
 
             var app = builder.Build();
-
-            if (!app.Environment.IsDevelopment())
-            {
-                app.UseExceptionHandler("/Home/Error");
-                app.UseHsts();
-            }
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
