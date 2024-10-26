@@ -187,4 +187,13 @@ namespace LoginCybLab1.Areas.Identity.Pages.Account
             return (IUserEmailStore<IdentityUser>)_userStore;
         }
     }
+
+    public class NullEmailSender : IEmailSender
+    {
+        public Task SendEmailAsync(string email, string subject, string htmlMessage)
+        {
+            // Tymczasowo pomija wysyłanie e-maila
+            return Task.CompletedTask;
+        }
+    }
 }

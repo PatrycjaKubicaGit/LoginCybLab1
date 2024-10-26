@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using LoginCybLab1.Models;
 using LoginCybLab1.Validator;
+using Microsoft.AspNetCore.Identity.UI.Services;
+using LoginCybLab1.Areas.Identity.Pages.Account;
 
 namespace LoginCybLab1
 {
@@ -41,6 +43,7 @@ namespace LoginCybLab1
             .AddEntityFrameworkStores<CybDbContext>()
             .AddDefaultTokenProviders();
 
+            builder.Services.AddSingleton<IEmailSender, NullEmailSender>(); 
             // Dodaj Razor Pages
             builder.Services.AddRazorPages();
 
