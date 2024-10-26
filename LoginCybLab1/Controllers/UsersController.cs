@@ -20,12 +20,14 @@ namespace LoginCybLab1.Controllers
         private readonly UserManager<IdentityUser> _userManager;
         private readonly SignInManager<IdentityUser> _signInManager;
         private readonly IConfiguration _configuration;
+        private readonly IUserActivityService _activityService;
 
-        public UsersController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, IConfiguration configuration)
+        public UsersController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, IConfiguration configuration, IUserActivityService activityService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _configuration = configuration;
+            _activityService = activityService;
         }
 
 
@@ -56,12 +58,6 @@ namespace LoginCybLab1.Controllers
             return View(model);
         }
 
-    public async Task<IActionResult> Index()
-        {
-            var users = await _userManager.Users.ToListAsync();
-            return View(users);
-        }
-
         // CREATE: GET - Wyświetlenie formularza dodawania nowego użytkownika
         [HttpGet]
         public IActionResult Create()
@@ -69,24 +65,23 @@ namespace LoginCybLab1.Controllers
             return View();
         }
 
+        public async Task<IActionResult> Index()
+        {
+            var users = await _userManager.Users.ToListAsync();
+            return View(users);
+        }
+
         // CREATE: POST - Tworzenie nowego użytkownika z użyciem Identity
-        [HttpPost]
         [HttpPost]
         public async Task<IActionResult> Create(string email, string password)
         {
             if (ModelState.IsValid)
             {
-                var user = new ApplicationUser
-                {
-                    UserName = email,
-                    Email = email,
-                    PasswordExpirationDate = DateTime.UtcNow.AddDays(30), 
-                    MustChangePassword = false
-                };
-
+                var user = new IdentityUser { UserName = email, Email = email };
                 var result = await _userManager.CreateAsync(user, password);
                 if (result.Succeeded)
                 {
+                    await _activityService.LogActivity(User.Identity.Name, "Create User", $"Użytkownik {email} został utworzony.");
                     return RedirectToAction("Index");
                 }
 
@@ -94,11 +89,11 @@ namespace LoginCybLab1.Controllers
                 {
                     ModelState.AddModelError("", error.Description);
                 }
-            }
 
+                await _activityService.LogActivity(User.Identity.Name, "Create User", $"Nieudana próba utworzenia użytkownika {email}.");
+            }
             return View();
         }
-
 
         // UPDATE: GET - Pobranie danych użytkownika do edycji
         [HttpGet]
@@ -115,6 +110,7 @@ namespace LoginCybLab1.Controllers
                 return NotFound();
             }
 
+            await _activityService.LogActivity(User.Identity.Name, "Edit User - GET", $"Wyświetlono formularz edycji użytkownika {user.UserName}.");
             return View(user);
         }
 
@@ -139,6 +135,7 @@ namespace LoginCybLab1.Controllers
             var result = await _userManager.UpdateAsync(existingUser);
             if (result.Succeeded)
             {
+                await _activityService.LogActivity(User.Identity.Name, "Edit User - POST", $"Użytkownik {user.UserName} został zaktualizowany.");
                 return RedirectToAction("Index");
             }
 
@@ -147,6 +144,7 @@ namespace LoginCybLab1.Controllers
                 ModelState.AddModelError("", error.Description);
             }
 
+            await _activityService.LogActivity(User.Identity.Name, "Edit User - POST", $"Nieudana próba edycji użytkownika {user.UserName}.");
             return View(user);
         }
 
@@ -165,6 +163,7 @@ namespace LoginCybLab1.Controllers
                 return NotFound();
             }
 
+            //await _activityService.LogActivity(User.Identity.Name, "Delete User - GET", $"Wyświetlono potwierdzenie usunięcia użytkownika {user.UserName}.");
             return View(user);
         }
 
@@ -181,6 +180,7 @@ namespace LoginCybLab1.Controllers
             var result = await _userManager.DeleteAsync(user);
             if (result.Succeeded)
             {
+                await _activityService.LogActivity(User.Identity.Name, "Delete User - POST", $"Użytkownik {user.UserName} został usunięty.");
                 return RedirectToAction("Index");
             }
 
@@ -189,9 +189,11 @@ namespace LoginCybLab1.Controllers
                 ModelState.AddModelError("", error.Description);
             }
 
+            await _activityService.LogActivity(User.Identity.Name, "Delete User - POST", $"Nieudana próba usunięcia użytkownika {user.UserName}.");
             return View(user);
         }
-        //blokowanie
+
+        // BLOKOWANIE: Blokowanie użytkownika
         public async Task<IActionResult> Lock(string id, int days)
         {
             if (id == null)
@@ -205,26 +207,21 @@ namespace LoginCybLab1.Controllers
                 return NotFound();
             }
 
-            // Blokowanie użytkownika na określoną liczbę dni
             user.LockoutEnd = DateTimeOffset.UtcNow.AddDays(days);
             user.LockoutEnabled = true;
 
             var result = await _userManager.UpdateAsync(user);
             if (result.Succeeded)
             {
+                await _activityService.LogActivity(User.Identity.Name, "Lock User", $"Użytkownik {user.UserName} został zablokowany na {days} dni.");
                 return RedirectToAction("Index");
             }
 
-            foreach (var error in result.Errors)
-            {
-                ModelState.AddModelError("", error.Description);
-            }
-
+            await _activityService.LogActivity(User.Identity.Name, "Lock User", $"Nieudana próba zablokowania użytkownika {user.UserName}.");
             return View("Index");
         }
 
-
-        //odblokowanie
+        // ODBLOKOWANIE: Odblokowanie użytkownika
         public async Task<IActionResult> Unlock(string id)
         {
             if (id == null)
@@ -238,25 +235,25 @@ namespace LoginCybLab1.Controllers
                 return NotFound();
             }
 
-            // Odblokowanie użytkownika
-            user.LockoutEnd = null; // Ustawienie na null oznacza odblokowanie
+            user.LockoutEnd = null;
             user.LockoutEnabled = false;
 
             var result = await _userManager.UpdateAsync(user);
             if (result.Succeeded)
             {
+                await _activityService.LogActivity(User.Identity.Name, "Unlock User", $"Użytkownik {user.UserName} został odblokowany.");
                 return RedirectToAction("Index");
             }
 
-            foreach (var error in result.Errors)
-            {
-                ModelState.AddModelError("", error.Description);
-            }
-
+            await _activityService.LogActivity(User.Identity.Name, "Unlock User", $"Nieudana próba odblokowania użytkownika {user.UserName}.");
             return View("Index");
         }
-
-
+        public async Task<IActionResult> Logs()
+        {
+            var logs = await _activityService.GetAllLogsAsync();  // Pobranie wszystkich logów z serwisu
+            return View(logs);  // Przekazanie logów do widoku
+        }
+        
 
     }
 }
