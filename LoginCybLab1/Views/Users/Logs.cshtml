@@ -1,0 +1,29 @@
+﻿@model IEnumerable<UserActivityLog>  
+
+@{
+    ViewBag.Title = "User Activity Logs";
+}
+
+<h2>User Activity Logs</h2>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>User</th>
+            <th>Action</th>
+            <th>Date</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var log in Model)
+        {
+            <tr>
+                <td>@log.UserName</td>
+                <td>@log.Action</td>
+                <td>@log.ActionTime.ToString("g")</td>  
+                <td>@log.Description</td>
+            </tr>
+        }
+    </tbody>
+</table>

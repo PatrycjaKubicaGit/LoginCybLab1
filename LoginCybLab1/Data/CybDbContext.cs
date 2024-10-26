@@ -12,5 +12,7 @@ namespace LoginCybLab1.Data
         }
         public DbSet<LoginCybLab1.Views.ViewModels.UserViewModel> UserViewModel { get; set; } = default!;
         public DbSet<PasswordHistory> PasswordHistory { get; set; }
+
+        public DbSet<UserActivityLog> UserActivityLogs { get; set; }
     }
 }

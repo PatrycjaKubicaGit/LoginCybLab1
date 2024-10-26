@@ -16,17 +16,22 @@ namespace LoginCybLab1.Areas.Identity.Pages.Account
     {
         private readonly SignInManager<IdentityUser> _signInManager;
         private readonly ILogger<LogoutModel> _logger;
+        private readonly IUserActivityService _activityService;
 
-        public LogoutModel(SignInManager<IdentityUser> signInManager, ILogger<LogoutModel> logger)
+        public LogoutModel(SignInManager<IdentityUser> signInManager, ILogger<LogoutModel> logger, IUserActivityService activityService)
         {
             _signInManager = signInManager;
             _logger = logger;
+            _activityService = activityService;
         }
 
         public async Task<IActionResult> OnPost(string returnUrl = null)
         {
+            var userEmail = User.Identity.Name;
+
             await _signInManager.SignOutAsync();
             _logger.LogInformation("User logged out.");
+            await _activityService.LogLogout(userEmail);
             if (returnUrl != null)
             {
                 return LocalRedirect(returnUrl);

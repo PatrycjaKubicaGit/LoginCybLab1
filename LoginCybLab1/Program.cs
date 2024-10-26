@@ -47,6 +47,8 @@ namespace LoginCybLab1
             // Dodaj Razor Pages
             builder.Services.AddRazorPages();
 
+            //serwisy
+            builder.Services.AddScoped<IUserActivityService, UserActivityService>();
             var app = builder.Build();
 
             app.UseHttpsRedirection();
