@@ -17,10 +17,13 @@ namespace LoginCybLab1.Areas.Identity.Pages.Account
     public class ResetPasswordModel : PageModel
     {
         private readonly UserManager<IdentityUser> _userManager;
+        private readonly IUserActivityService _activityService;
 
-        public ResetPasswordModel(UserManager<IdentityUser> userManager)
+        public ResetPasswordModel(UserManager<IdentityUser> userManager, IUserActivityService activityService)
         {
             _userManager = userManager;
+            _activityService = activityService;
+
         }
 
         /// <summary>
@@ -89,6 +92,9 @@ namespace LoginCybLab1.Areas.Identity.Pages.Account
 
         public async Task<IActionResult> OnPostAsync()
         {
+
+            var userEmail = User.Identity.Name;
+
             if (!ModelState.IsValid)
             {
                 return Page();
@@ -100,10 +106,11 @@ namespace LoginCybLab1.Areas.Identity.Pages.Account
                 // Don't reveal that the user does not exist
                 return RedirectToPage("./ResetPasswordConfirmation");
             }
-
+            
             var result = await _userManager.ResetPasswordAsync(user, Input.Code, Input.Password);
             if (result.Succeeded)
             {
+                await _activityService.LogPasswordChange(user.UserName);
                 return RedirectToPage("./ResetPasswordConfirmation");
             }
 
@@ -114,4 +121,5 @@ namespace LoginCybLab1.Areas.Identity.Pages.Account
             return Page();
         }
     }
+
 }

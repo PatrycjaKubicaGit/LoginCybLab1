@@ -9,6 +9,7 @@ public interface IUserActivityService
 
     Task LogLogin(string username);
     Task LogLogout(string username);
+    Task LogPasswordChange(string username);
 }
 
 public class UserActivityService : IUserActivityService
@@ -66,6 +67,21 @@ public class UserActivityService : IUserActivityService
             ActionTime = DateTime.UtcNow,
             Action = action,
             Description = description
+        };
+
+        _context.UserActivityLogs.Add(log);
+        await _context.SaveChangesAsync();
+    }
+
+    // Metoda rejestrująca zmianę hasła przez użytkownika
+    public async Task LogPasswordChange(string username)
+    {
+        var log = new UserActivityLog
+        {
+            UserName = username,
+            Action = "PasswordChange",
+            Description = $"{username} zmienił hasło.",
+            ActionTime = DateTime.UtcNow
         };
 
         _context.UserActivityLogs.Add(log);

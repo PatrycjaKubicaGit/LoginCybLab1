@@ -41,7 +41,8 @@ namespace LoginCybLab1
             .AddRoles<IdentityRole>()
             .AddPasswordValidator<CustomPasswordValidator>()
             .AddEntityFrameworkStores<CybDbContext>()
-            .AddDefaultTokenProviders();
+            .AddDefaultTokenProviders().AddSignInManager<SignInManager<IdentityUser>>()  // Dodaje mened¿er logowania
+.AddDefaultUI();
 
             builder.Services.AddSingleton<IEmailSender, NullEmailSender>(); 
             // Dodaj Razor Pages
