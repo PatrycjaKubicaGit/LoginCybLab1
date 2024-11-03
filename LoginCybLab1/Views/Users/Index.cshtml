@@ -1,4 +1,4 @@
-﻿@model IEnumerable<Microsoft.AspNetCore.Identity.IdentityUser>
+﻿@model IEnumerable<ApplicationUser>
 
 @{
     ViewData["Title"] = "Lista użytkowników";
@@ -22,7 +22,8 @@
                 <td>@user.Email</td>
                 <td>@user.UserName</td>
                 <td>
-                    @if (user.LockoutEnd != null && user.LockoutEnd > DateTimeOffset.UtcNow)
+                    @if (user.
+                    End != null && user.LockoutEnd > DateTimeOffset.UtcNow)
                     {
                         <span>@user.LockoutEnd.Value.ToString("yyyy-MM-dd HH:mm")</span>
                     }
@@ -47,6 +48,15 @@
                             <input type="number" name="days" min="1" required />
                             <button type="submit" class="btn btn-danger">Blokuj użytkownika</button>
                         </form>
+                    }
+
+                    @if (user.MustChangePassword != null && user.MustChangePassword == false)
+                    {
+                        <a asp-action="SetOneTimePassword" asp-route-id="@user.Id" class="btn btn-info">Ustaw hasło jednorazowe</a>
+                    }
+                    else
+                    {
+                        <label >Ustawiono haslo jednorazowe x = @user.X</label>
                     }
                 </td>
             </tr>

@@ -14,18 +14,23 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
+using LoginCybLab1.Models;
+
 
 namespace LoginCybLab1.Areas.Identity.Pages.Account
 {
     public class LoginModel : PageModel
     {
-        private readonly SignInManager<IdentityUser> _signInManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly UserManager<ApplicationUser> _userManager;
+
         private readonly ILogger<LoginModel> _logger;
         private readonly IUserActivityService _activityService;
 
-        public LoginModel(SignInManager<IdentityUser> signInManager, ILogger<LoginModel> logger, IUserActivityService activityService)
+        public LoginModel(SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager, ILogger<LoginModel> logger, IUserActivityService activityService)
         {
             _signInManager = signInManager;
+            _userManager = userManager;
             _logger = logger;
             _activityService = activityService;
         }
@@ -113,11 +118,32 @@ namespace LoginCybLab1.Areas.Identity.Pages.Account
             {
                 // This doesn't count login failures towards account lockout
                 // To enable password failures to trigger account lockout, set lockoutOnFailure: true
-                var result = await _signInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+
+                var result = await _signInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: true);
+             
+                if (result.IsLockedOut)
+                {
+                    _logger.LogWarning("User account locked out.");
+                    return RedirectToPage("./Lockout");
+                }
+
                 if (result.Succeeded)
                 {
+                    HttpContext.Session.SetString("LastActivity", DateTime.UtcNow.ToString());
+                    await _activityService.LogActivity(Input.Email, "Login", $"Zalogowany {DateTime.UtcNow.ToString()}");
+
+
+                    var user = _userManager.FindByEmailAsync(Input.Email).Result;
+                    if (user != null && user.MustChangePassword == true)
+                    {
+                        await _activityService.LogActivity(Input.Email, "Change one-set password", $"Zmiana hasła jednorazowego dla użytkownika {user.UserName}.");
+                        user.MustChangePassword = false;
+                        return LocalRedirect("ForgotPassword");
+                    }
+
                     _logger.LogInformation("User logged in.");
                     await _activityService.LogLogin(Input.Email);
+
                     return LocalRedirect(returnUrl);
                 }
                 if (result.RequiresTwoFactor)
@@ -131,7 +157,15 @@ namespace LoginCybLab1.Areas.Identity.Pages.Account
                 }
                 else
                 {
-                    ModelState.AddModelError(string.Empty, "Invalid login attempt (wrong login or password)");
+                    var user = _userManager.FindByEmailAsync(Input.Email).Result; 
+                    if (user != null && user.MustChangePassword == true)
+                    {
+                        ModelState.AddModelError(string.Empty, "Use single-use password!");
+                    }
+                    else
+                    {
+                        ModelState.AddModelError(string.Empty, "Invalid login attempt (wrong login or password)");
+                    }
                     return Page();
                 }
             }

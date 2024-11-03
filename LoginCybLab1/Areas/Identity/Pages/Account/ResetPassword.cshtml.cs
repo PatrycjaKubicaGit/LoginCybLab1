@@ -11,15 +11,17 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
+using LoginCybLab1.Models;
+
 
 namespace LoginCybLab1.Areas.Identity.Pages.Account
 {
     public class ResetPasswordModel : PageModel
     {
-        private readonly UserManager<IdentityUser> _userManager;
+        private readonly UserManager<ApplicationUser> _userManager;
         private readonly IUserActivityService _activityService;
 
-        public ResetPasswordModel(UserManager<IdentityUser> userManager, IUserActivityService activityService)
+        public ResetPasswordModel(UserManager<ApplicationUser> userManager, IUserActivityService activityService)
         {
             _userManager = userManager;
             _activityService = activityService;

@@ -17,12 +17,12 @@ namespace LoginCybLab1.Controllers
     [Authorize(Roles = "Admin")]
     public class UsersController : Controller
     {
-        private readonly UserManager<IdentityUser> _userManager;
-        private readonly SignInManager<IdentityUser> _signInManager;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly IConfiguration _configuration;
         private readonly IUserActivityService _activityService;
 
-        public UsersController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager, IConfiguration configuration, IUserActivityService activityService)
+        public UsersController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IConfiguration configuration, IUserActivityService activityService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -30,7 +30,13 @@ namespace LoginCybLab1.Controllers
             _activityService = activityService;
         }
 
+        [HttpGet]
+        public IActionResult KeepSessionAlive()
+        {
+            HttpContext.Session.SetString("LastActivity", DateTime.UtcNow.ToString());
+            return Ok();
 
+        }
         // GET: Wyświetlenie formularza zarządzania polityką haseł
         [HttpGet]
         public IActionResult ManagePasswordPolicy()
@@ -77,7 +83,7 @@ namespace LoginCybLab1.Controllers
         {
             if (ModelState.IsValid)
             {
-                var user = new IdentityUser { UserName = email, Email = email };
+                var user = new ApplicationUser { UserName = email, Email = email };
                 var result = await _userManager.CreateAsync(user, password);
                 if (result.Succeeded)
                 {
@@ -116,7 +122,7 @@ namespace LoginCybLab1.Controllers
 
         // UPDATE: POST - Zapisanie edytowanych danych użytkownika
         [HttpPost]
-        public async Task<IActionResult> Edit(string id, IdentityUser user)
+        public async Task<IActionResult> Edit(string id, ApplicationUser user)
         {
             if (id != user.Id)
             {
@@ -250,10 +256,43 @@ namespace LoginCybLab1.Controllers
         }
         public async Task<IActionResult> Logs()
         {
-            var logs = await _activityService.GetAllLogsAsync();  // Pobranie wszystkich logów z serwisu
-            return View(logs);  // Przekazanie logów do widoku
+            var logs = await _activityService.GetAllLogsAsync();  
+            return View(logs);  
         }
-        
+
+        public async Task<IActionResult> SetOneTimePassword(string id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var user = await _userManager.FindByIdAsync(id);
+          
+            if (user == null)
+                return NotFound();
+
+
+            Random rnd = new Random();
+            var x = rnd.Next(0, 1000);
+            var a = user.UserName.Length;
+            var oneTimePassword = (a*Math.Log(x)).ToString();
+            user.X = x;
+            user.PasswordHash = _userManager.PasswordHasher.HashPassword(user, oneTimePassword);
+
+            user.MustChangePassword = true;
+
+            var result = await _userManager.UpdateAsync(user);
+            if (result.Succeeded)
+            {
+                await _activityService.LogActivity(User.Identity.Name, "Set One-Time Password", $"Użytkownik {user.UserName} otrzymał hasło jednorazowe x={x}, hasło: {oneTimePassword}.");
+                TempData["OneTimePassword"] = $"Generated one-time password: {oneTimePassword}";
+                return RedirectToAction("Index");
+            }
+
+            await _activityService.LogActivity(User.Identity.Name, "Set One-Time Password", $"Nieudana próba ustawienia hasła jednorazowego dla użytkownika {user.UserName}.");
+            return RedirectToAction("Index");
+        }
 
     }
 }

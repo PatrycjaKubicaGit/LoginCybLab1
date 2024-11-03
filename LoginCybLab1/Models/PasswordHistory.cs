@@ -9,6 +9,6 @@ public class PasswordHistory
     public string HashedPassword { get; set; }
     public DateTime DateChanged { get; set; }
 
-    public virtual IdentityUser User { get; set; }
+    public virtual ApplicationUser User { get; set; }
 }
 

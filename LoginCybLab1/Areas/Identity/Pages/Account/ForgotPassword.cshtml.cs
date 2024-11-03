@@ -21,12 +21,12 @@ namespace LoginCybLab1.Areas.Identity.Pages.Account
 {
     public class ForgotPasswordModel : PageModel
     {
-        private readonly UserManager<IdentityUser> _userManager;
+        private readonly UserManager<ApplicationUser> _userManager;
         private readonly IEmailSender _emailSender;
         private readonly CybDbContext _context;
 
         public ForgotPasswordModel(
-            UserManager<IdentityUser> userManager,
+            UserManager<ApplicationUser> userManager,
             IEmailSender emailSender,
             CybDbContext context)
         {

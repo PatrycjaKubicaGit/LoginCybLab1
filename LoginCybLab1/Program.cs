@@ -5,6 +5,8 @@ using LoginCybLab1.Models;
 using LoginCybLab1.Validator;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using LoginCybLab1.Areas.Identity.Pages.Account;
+using System.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace LoginCybLab1
 {
@@ -17,7 +19,6 @@ namespace LoginCybLab1
             // Add services to the container.
             builder.Services.AddControllersWithViews();
 
-            // Konfiguracja bazy danych
             builder.Services.AddDbContext<CybDbContext>(options =>
             {
                 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -25,7 +26,7 @@ namespace LoginCybLab1
             });
 
             // Dodaj to¿samoœæ z niestandardowym walidatorem has³a
-            builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
+            builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
             {
                 // Pobranie opcji polityki has³a z konfiguracji
                 var passwordOptions = builder.Configuration.GetSection("PasswordPolicy").Get<PasswordPolicyViewModel>();
@@ -36,19 +37,32 @@ namespace LoginCybLab1
                     options.Password.RequireNonAlphanumeric = passwordOptions.RequireNonAlphanumeric;
                     options.Password.RequireUppercase = passwordOptions.RequireUppercase;
                     options.Password.RequireLowercase = passwordOptions.RequireLowercase;
+
+                    //MECHANIZM B£ÊDNYCH LOGOWAÑ
+                    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+                    options.Lockout.MaxFailedAccessAttempts = 5;
+                    options.Lockout.AllowedForNewUsers = true;
                 }
             })
-            .AddRoles<IdentityRole>()
-            .AddPasswordValidator<CustomPasswordValidator>()
-            .AddEntityFrameworkStores<CybDbContext>()
-            .AddDefaultTokenProviders().AddSignInManager<SignInManager<IdentityUser>>()  // Dodaje mened¿er logowania
-.AddDefaultUI();
+          .AddEntityFrameworkStores<CybDbContext>()
+          .AddDefaultTokenProviders()
+          .AddPasswordValidator<CustomPasswordValidator>()
+          .AddSignInManager<SignInManager<ApplicationUser>>()
+          .AddDefaultUI();
+
 
             builder.Services.AddSingleton<IEmailSender, NullEmailSender>(); 
             // Dodaj Razor Pages
             builder.Services.AddRazorPages();
 
-            //serwisy
+            //MECHANIZM SESJI
+            builder.Services.AddSession(options =>
+            {
+                options.IdleTimeout = TimeSpan.FromMinutes(15); 
+                options.Cookie.HttpOnly = true;
+                options.Cookie.IsEssential = true; 
+            });
+
             builder.Services.AddScoped<IUserActivityService, UserActivityService>();
             var app = builder.Build();
 
@@ -56,8 +70,8 @@ namespace LoginCybLab1
             app.UseStaticFiles();
 
             app.UseRouting();
-
             app.UseAuthorization();
+            app.UseSession();
 
             app.MapControllerRoute(
                 name: "default",
@@ -82,38 +96,44 @@ namespace LoginCybLab1
 
             using (var scope = app.Services.CreateScope())
             {
-                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
                 string email = "admin1@admin.com";
                 string password = "Admin123@";
 
                 if (await userManager.FindByEmailAsync(email) == null)
                 {
-                    var user = new IdentityUser();
+                    var user = new ApplicationUser();
                     user.UserName = email;
                     user.Email = email;
                     user.EmailConfirmed = true;
-
+                    user.MustChangePassword = false;
+                    user.LockoutEnabled = true;
+                    user.AccessFailedCount = 5; 
                     await userManager.CreateAsync(user, password);
 
                     await userManager.AddToRoleAsync(user, "Admin");
                 }
-            }   
-            
-            
+            }
+
+
             using (var scope = app.Services.CreateScope())
             {
-                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
                 string email = "admin@admin.com";
                 string password = "Admin123@";
 
                 if (await userManager.FindByEmailAsync(email) == null)
                 {
-                    var user = new IdentityUser();
+                    var user = new ApplicationUser();
                     user.UserName = email;
                     user.Email = email;
                     user.EmailConfirmed = true;
+                    user.AccessFailedCount = 5;
+
+                    user.MustChangePassword = false;
+                    user.LockoutEnabled = true;
 
                     await userManager.CreateAsync(user, password);
 
@@ -123,17 +143,22 @@ namespace LoginCybLab1
 
             using (var scope = app.Services.CreateScope())
             {
-                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
                 string email = "test@test.com";
                 string password = "Admin123@";
 
                 if (await userManager.FindByEmailAsync(email) == null)
                 {
-                    var user = new IdentityUser();
+                    var user = new ApplicationUser();
                     user.UserName = email;
                     user.Email = email;
                     user.EmailConfirmed = true;
+                    user.MustChangePassword = false;
+                user.LockoutEnabled = true;
+                    user.AccessFailedCount = 5;
+
+
 
                     await userManager.CreateAsync(user, password);
 
