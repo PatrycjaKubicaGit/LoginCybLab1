@@ -58,9 +58,17 @@ namespace LoginCybLab1
             //MECHANIZM SESJI
             builder.Services.AddSession(options =>
             {
-                options.IdleTimeout = TimeSpan.FromMinutes(15); 
+                options.IdleTimeout = TimeSpan.FromMinutes(1); 
                 options.Cookie.HttpOnly = true;
-                options.Cookie.IsEssential = true; 
+                options.Cookie.IsEssential = true;
+                
+            });
+
+            builder.Services.ConfigureApplicationCookie(options =>
+            {
+              
+                options.ExpireTimeSpan = TimeSpan.FromMinutes(1); 
+                options.SlidingExpiration = true; 
             });
 
             builder.Services.AddScoped<IUserActivityService, UserActivityService>();
@@ -70,8 +78,10 @@ namespace LoginCybLab1
             app.UseStaticFiles();
 
             app.UseRouting();
-            app.UseAuthorization();
+
             app.UseSession();
+            app.UseAuthorization();
+            
 
             app.MapControllerRoute(
                 name: "default",

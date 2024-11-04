@@ -22,8 +22,7 @@
                 <td>@user.Email</td>
                 <td>@user.UserName</td>
                 <td>
-                    @if (user.
-                    End != null && user.LockoutEnd > DateTimeOffset.UtcNow)
+                    @if (user.LockoutEnd != null && user.LockoutEnd > DateTimeOffset.UtcNow)
                     {
                         <span>@user.LockoutEnd.Value.ToString("yyyy-MM-dd HH:mm")</span>
                     }

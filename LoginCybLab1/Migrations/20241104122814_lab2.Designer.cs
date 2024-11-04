@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LoginCybLab1.Migrations
 {
     [DbContext(typeof(CybDbContext))]
-    [Migration("20241103122503_user")]
-    partial class user
+    [Migration("20241104122814_lab2")]
+    partial class lab2
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
