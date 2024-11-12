@@ -9,6 +9,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 using LoginCybLab1.Models;
+using Microsoft.Extensions.Options;
+using System.Text.Json.Serialization;
+using System.Text.Json;
+
+
 namespace LoginCybLab1.Areas.Identity.Pages.Account.Manage
 {
     public class ChangePasswordModel : PageModel
@@ -17,16 +22,20 @@ namespace LoginCybLab1.Areas.Identity.Pages.Account.Manage
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly ILogger<ChangePasswordModel> _logger;
         private readonly IUserActivityService _activityService;
+        private readonly IOptions<ReCaptchaSettings> _reCaptchaSettings;
+
         public ChangePasswordModel(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
             ILogger<ChangePasswordModel> logger,
-            IUserActivityService activityService)
+            IUserActivityService activityService,
+            IOptions<ReCaptchaSettings> reCaptchaSettings)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _logger = logger;
             _activityService = activityService;
+            _reCaptchaSettings = reCaptchaSettings;
         }
         /// <summary>
         ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
@@ -74,6 +83,9 @@ namespace LoginCybLab1.Areas.Identity.Pages.Account.Manage
         }
         public async Task<IActionResult> OnGetAsync()
         {
+            //captcha
+            ViewData["ReCaptchaSiteKey"] = _reCaptchaSettings.Value.SiteKey;
+
             var user = await _userManager.GetUserAsync(User);
             if (user == null)
             {
@@ -93,6 +105,16 @@ namespace LoginCybLab1.Areas.Identity.Pages.Account.Manage
             {
                 return Page();
             }
+            //captcha
+            var reCaptchaResponse = Request.Form["g-recaptcha-response"];
+            var isReCaptchaValid = await ValidateReCaptchaAsync(reCaptchaResponse);
+
+            if (!isReCaptchaValid)
+            {
+                ModelState.AddModelError(string.Empty, "Potwierdzenie reCAPTCHA nie powiodło się.");
+                return Page();
+            }
+
             var user = await _userManager.GetUserAsync(User);
             if (user == null)
             {
@@ -113,5 +135,28 @@ namespace LoginCybLab1.Areas.Identity.Pages.Account.Manage
             StatusMessage = "Your password has been changed.";
             return RedirectToPage();
         }
+        //metoda captcha
+        private async Task<bool> ValidateReCaptchaAsync(string reCaptchaResponse)
+        {
+            var secretKey = _reCaptchaSettings.Value.SecretKey;
+            using var httpClient = new HttpClient();
+            var response = await httpClient.PostAsync(
+                $"https://www.google.com/recaptcha/api/siteverify?secret={secretKey}&response={reCaptchaResponse}",
+                null
+            );
+
+            if (!response.IsSuccessStatusCode) return false;
+
+            var jsonString = await response.Content.ReadAsStringAsync();
+            var reCaptchaResult = JsonSerializer.Deserialize<ReCaptchaResponse>(jsonString);
+            return reCaptchaResult?.Success ?? false;
+        }
+
+        public class ReCaptchaResponse
+        {
+            [JsonPropertyName("success")]
+            public bool Success { get; set; }
+        }
+
     }
 }

@@ -58,7 +58,7 @@ namespace LoginCybLab1
             //MECHANIZM SESJI
             builder.Services.AddSession(options =>
             {
-                options.IdleTimeout = TimeSpan.FromMinutes(1); 
+                options.IdleTimeout = TimeSpan.FromMinutes(15); 
                 options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
                 
@@ -67,11 +67,18 @@ namespace LoginCybLab1
             builder.Services.ConfigureApplicationCookie(options =>
             {
               
-                options.ExpireTimeSpan = TimeSpan.FromMinutes(1); 
+                options.ExpireTimeSpan = TimeSpan.FromMinutes(15); 
                 options.SlidingExpiration = true; 
             });
 
             builder.Services.AddScoped<IUserActivityService, UserActivityService>();
+
+            //google reCaptcha dla zmiany has³a
+            builder.Services.AddHttpClient();
+            builder.Services.Configure<ReCaptchaSettings>(builder.Configuration.GetSection("GoogleReCaptcha"));
+
+
+
             var app = builder.Build();
 
             app.UseHttpsRedirection();
