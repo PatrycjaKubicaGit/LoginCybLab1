@@ -112,6 +112,7 @@ namespace LoginCybLab1.Areas.Identity.Pages.Account.Manage
             if (!isReCaptchaValid)
             {
                 ModelState.AddModelError(string.Empty, "Potwierdzenie reCAPTCHA nie powiodło się.");
+                ViewData["ReCaptchaSiteKey"] = _reCaptchaSettings.Value.SiteKey;
                 return Page();
             }
 
