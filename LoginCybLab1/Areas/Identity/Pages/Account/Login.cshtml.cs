@@ -82,7 +82,6 @@ namespace LoginCybLab1.Areas.Identity.Pages.Account
             string text = $"{num1} + {num2}";
 
 
-            //https://www.codeproject.com/KB/aspnet/CaptchaImage.aspx
             var bitmap = GenerateImage(200, 100, text);
 
             using (MemoryStream ms = new MemoryStream())
