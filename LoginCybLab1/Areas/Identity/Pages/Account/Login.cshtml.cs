@@ -1,26 +1,20 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-#nullable disable
-
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Authentication;
+﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 using LoginCybLab1.Models;
-
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
+using System.IO;
+using System.ComponentModel.DataAnnotations;
 
 namespace LoginCybLab1.Areas.Identity.Pages.Account
 {
     public class LoginModel : PageModel
     {
+        private static Random _random = new Random();
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly UserManager<ApplicationUser> _userManager;
 
@@ -35,60 +29,33 @@ namespace LoginCybLab1.Areas.Identity.Pages.Account
             _activityService = activityService;
         }
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
         [BindProperty]
         public InputModel Input { get; set; }
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
-        public IList<AuthenticationScheme> ExternalLogins { get; set; }
-
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
-        public string ReturnUrl { get; set; }
-
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
         [TempData]
         public string ErrorMessage { get; set; }
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
+        public string ReturnUrl { get; set; }
+
+        public IList<AuthenticationScheme> ExternalLogins { get; set; }
+        
         public class InputModel
         {
-            /// <summary>
-            ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-            ///     directly from your code. This API may change or be removed in future releases.
-            /// </summary>
             [Required]
             [EmailAddress]
             public string Email { get; set; }
 
-            /// <summary>
-            ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-            ///     directly from your code. This API may change or be removed in future releases.
-            /// </summary>
             [Required]
             [DataType(DataType.Password)]
             public string Password { get; set; }
 
-            /// <summary>
-            ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-            ///     directly from your code. This API may change or be removed in future releases.
-            /// </summary>
-            [Display(Name = "Remember me?")]
+
+            [Display(Name = "Pamiętaj mnie")]
             public bool RememberMe { get; set; }
+
+            [Required]
+            [Range(0, int.MaxValue, ErrorMessage = "Błędna odpowiedź CAPTCHA")]
+            public int CaptchaResponse { get; set; }
         }
 
         public async Task OnGetAsync(string returnUrl = null)
@@ -98,14 +65,94 @@ namespace LoginCybLab1.Areas.Identity.Pages.Account
                 ModelState.AddModelError(string.Empty, ErrorMessage);
             }
 
-            returnUrl ??= Url.Content("~/");
+            ReturnUrl = returnUrl ?? Url.Content("~/");
 
-            // Clear the existing external cookie to ensure a clean login process
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
 
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+        }
 
-            ReturnUrl = returnUrl;
+        public IActionResult OnGetGenerateCaptcha()
+        {
+            int num1 = _random.Next(1, 10);
+            int num2 = _random.Next(1, 10);
+            int result = num1 + num2;
+
+            HttpContext.Session.SetInt32("CaptchaResult", result);
+            string text = $"{num1} + {num2}";
+
+
+            //https://www.codeproject.com/KB/aspnet/CaptchaImage.aspx
+            var bitmap = GenerateImage(200, 100, text);
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                bitmap.Save(ms, ImageFormat.Png);
+                return File(ms.ToArray(), "image/png");
+            }
+        }
+
+        private Bitmap GenerateImage(int width, int height, string text)
+        {
+            var random = new Random();
+            Bitmap bitmap = new Bitmap(width, height);
+            Graphics g = Graphics.FromImage(bitmap);
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            Rectangle rect = new Rectangle(0, 0, width, height);
+
+            HatchBrush hatchBrush = new HatchBrush(
+                HatchStyle.SmallConfetti,
+                Color.LightGray,
+                Color.White);
+            g.FillRectangle(hatchBrush, rect);
+
+            SizeF size;
+            float fontSize = rect.Height + 1;
+            Font font;
+            do
+            {
+                fontSize--;
+                font = new Font("Arial", fontSize, FontStyle.Bold);
+                size = g.MeasureString(text, font);
+            } while (size.Width > rect.Width);
+
+            StringFormat format = new StringFormat
+            {
+                Alignment = StringAlignment.Center,
+                LineAlignment = StringAlignment.Center
+            };
+
+            GraphicsPath path = new GraphicsPath();
+            path.AddString(text, font.FontFamily, (int)font.Style, font.Size, rect, format);
+            float v = 4F;
+            PointF[] points =
+            {
+                new PointF(random.Next(rect.Width) / v, random.Next(rect.Height) / v),
+                new PointF(rect.Width - random.Next(rect.Width) / v, random.Next(rect.Height) / v),
+                new PointF(random.Next(rect.Width) / v, rect.Height - random.Next(rect.Height) / v),
+                new PointF(rect.Width - random.Next(rect.Width) / v, rect.Height - random.Next(rect.Height) / v)
+            };
+            Matrix matrix = new Matrix();
+            path.Warp(points, rect, matrix, WarpMode.Perspective, 0F);
+
+            hatchBrush = new HatchBrush(HatchStyle.LargeConfetti, Color.LightGray, Color.DarkGray);
+            g.FillPath(hatchBrush, path);
+
+            int m = Math.Max(rect.Width, rect.Height);
+            for (int i = 0; i < (int)(rect.Width * rect.Height / 30F); i++)
+            {
+                int x = random.Next(rect.Width);
+                int y = random.Next(rect.Height);
+                int w = random.Next(m / 50);
+                int h = random.Next(m / 50);
+                g.FillEllipse(hatchBrush, x, y, w, h);
+            }
+
+            font.Dispose();
+            hatchBrush.Dispose();
+            g.Dispose();
+
+            return bitmap;
         }
 
         public async Task<IActionResult> OnPostAsync(string returnUrl = null)
@@ -114,20 +161,24 @@ namespace LoginCybLab1.Areas.Identity.Pages.Account
 
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
 
+            int userCaptchaAnswer = Input.CaptchaResponse;
+
+            var captchaResult = HttpContext.Session.GetInt32("CaptchaResult");
+            if (captchaResult != userCaptchaAnswer)
+            {
+                ModelState.AddModelError(string.Empty, "Błędna odpowiedź CAPTCHA");
+                return Page();
+            }
+
             if (ModelState.IsValid)
             {
-                // This doesn't count login failures towards account lockout
-                // To enable password failures to trigger account lockout, set lockoutOnFailure: true
-
-                var result = await _signInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: true);
-             
-                if (result.IsLockedOut)
+                var resultLog = await _signInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: true);
+                if (resultLog.IsLockedOut)
                 {
-                    _logger.LogWarning("User account locked out.");
+                    _logger.LogWarning("Konto użytkownika zablokowane.");
                     return RedirectToPage("./Lockout");
                 }
-
-                if (result.Succeeded)
+                if (resultLog.Succeeded)
                 {
                     HttpContext.Session.SetString("LastActivity", DateTime.UtcNow.ToString());
                     await _activityService.LogActivity(Input.Email, "Login", $"Zalogowany {DateTime.UtcNow.ToString()}");
@@ -146,18 +197,18 @@ namespace LoginCybLab1.Areas.Identity.Pages.Account
 
                     return LocalRedirect(returnUrl);
                 }
-                if (result.RequiresTwoFactor)
+                if (resultLog.RequiresTwoFactor)
                 {
                     return RedirectToPage("./LoginWith2fa", new { ReturnUrl = returnUrl, RememberMe = Input.RememberMe });
                 }
-                if (result.IsLockedOut)
+                if (resultLog.IsLockedOut)
                 {
                     _logger.LogWarning("User account locked out.");
                     return RedirectToPage("./Lockout");
                 }
                 else
                 {
-                    var user = _userManager.FindByEmailAsync(Input.Email).Result; 
+                    var user = _userManager.FindByEmailAsync(Input.Email).Result;
                     if (user != null && user.MustChangePassword == true)
                     {
                         ModelState.AddModelError(string.Empty, "Use single-use password!");
