@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace LoginCybLab1.Migrations
 {
     /// <inheritdoc />
-    public partial class lab2 : Migration
+    public partial class DemoLab4 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -30,6 +30,7 @@ namespace LoginCybLab1.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    IsDemoUser = table.Column<bool>(type: "bit", nullable: false),
                     MustChangePassword = table.Column<bool>(type: "bit", nullable: true),
                     PasswordExpirationDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     X = table.Column<int>(type: "int", nullable: true),
