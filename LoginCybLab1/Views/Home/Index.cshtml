@@ -26,6 +26,13 @@
         else
         {
             <button onclick="window.open('/Home/Print', '_blank', 'width=800,height=600');" class="btn btn-primary">Drukuj</button>
+            <a asp-action="TriggerDnsToken" class="btn btn-danger">Uruchom DNS Token</a>
+            @if (TempData["DNSSuccessMessage"] != null)
+            {
+                <p class="text-success">@TempData["DNSSuccessMessage"]</p>
+            }
+
+
         }
 
         @if (TempData["SuccessMessage"] != null)

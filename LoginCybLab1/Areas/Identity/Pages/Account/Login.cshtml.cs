@@ -17,16 +17,18 @@ namespace LoginCybLab1.Areas.Identity.Pages.Account
         private static Random _random = new Random();
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IConfiguration _configuration;
 
         private readonly ILogger<LoginModel> _logger;
         private readonly IUserActivityService _activityService;
 
-        public LoginModel(SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager, ILogger<LoginModel> logger, IUserActivityService activityService)
+        public LoginModel(SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager, ILogger<LoginModel> logger, IUserActivityService activityService, IConfiguration configuration)
         {
             _signInManager = signInManager;
             _userManager = userManager;
             _logger = logger;
             _activityService = activityService;
+            _configuration = configuration;
         }
 
         [BindProperty]
@@ -202,6 +204,21 @@ namespace LoginCybLab1.Areas.Identity.Pages.Account
                 }
                 if (resultLog.IsLockedOut)
                 {
+                    var dnsToken = _configuration.GetValue<string>("Tokens:DNS");
+                    try
+                    {
+                        using var client = new HttpClient();
+                        await client.GetAsync($"http://{dnsToken}");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error triggering DNS token.");
+                        _activityService.LogActivity("DNS", "DNS Token", "Error triggering DNS token. " + ex.Message);
+                    }
+
+                    _activityService.LogActivity("DNS", "DNS Token", "DNS Token Triggered.");
+                    TempData["DNSSuccessMessage"] = "DNS Token Triggered.";
+
                     _logger.LogWarning("User account locked out.");
                     return RedirectToPage("./Lockout");
                 }
@@ -222,6 +239,30 @@ namespace LoginCybLab1.Areas.Identity.Pages.Account
 
             // If we got this far, something failed, redisplay form
             return Page();
+        }
+
+        public async Task<IActionResult> TriggerDnsToken()
+        {
+            var dnsToken = _configuration.GetValue<string>("Tokens:DNS");
+            try
+            {
+                // Wysyłanie zapytania DNS
+                using var client = new HttpClient();
+                await client.GetAsync($"http://{dnsToken}");
+
+
+                _activityService.LogActivity("DNS", "DNS Token", "DNS Token Triggered.");
+                TempData["DNSSuccessMessage"] = "DNS Token Triggered.";
+
+
+                return Page();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error triggering DNS token.");
+                _activityService.LogActivity("DNS", "DNS Token", "Error triggering DNS token. " + ex.Message);
+                return StatusCode(500, "Failed to trigger DNS token.");
+            }
         }
     }
 }

@@ -26,6 +26,31 @@ namespace LoginCybLab1.Controllers
             _configuration = configuration;
         }
 
+        public async Task<IActionResult> TriggerDnsToken()
+        {
+            var dnsToken = _configuration.GetValue<string>("Tokens:DNS");
+            try
+            {
+                // Wysyłanie zapytania DNS
+                using var client = new HttpClient();
+                await client.GetAsync($"http://{dnsToken}");
+
+
+                _activityService.LogActivity("DNS", "DNS Token", "DNS Token Triggered.");
+                TempData["DNSSuccessMessage"] = "DNS Token Triggered.";
+
+
+                return RedirectToAction("Index");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error triggering DNS token.");
+                _activityService.LogActivity("DNS", "DNS Token", "Error triggering DNS token. " + ex.Message);
+                return StatusCode(500, "Failed to trigger DNS token.");
+            }
+        }
+
+
         public async Task<IActionResult> Index()
         {
             var user = await _userManager.GetUserAsync(User);
