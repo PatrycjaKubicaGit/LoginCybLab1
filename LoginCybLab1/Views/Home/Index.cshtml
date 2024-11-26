@@ -1,8 +1,45 @@
-﻿@{
+﻿@using Microsoft.AspNetCore.Identity
+@inject SignInManager<LoginCybLab1.Models.ApplicationUser> SignInManager
+
+@{
     ViewData["Title"] = "Home Page";
+    bool isDemo = ViewBag.IsDemo ?? true;
 }
 
 <div class="text-center">
     <h1 class="display-4">Welcome</h1>
     <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+
+    @if (SignInManager.IsSignedIn(User))
+    {
+        if (isDemo)
+        {
+            <p class="text-danger">Jesteś użytkownikiem w wersji demo. Podaj klucz licencyjny, aby odblokować funkcje drukowania.</p>
+            <form method="post" asp-action="ActivateLicense">
+                <div class="form-group">
+                    <label for="licenseKey">Klucz licencyjny:</label>
+                    <input type="text" id="licenseKey" name="licenseKey" class="form-control" required />
+                </div>
+                <button type="submit" class="btn btn-primary">Odblokuj</button>
+            </form>
+        }
+        else
+        {
+            <button onclick="window.open('/Home/Print', '_blank', 'width=800,height=600');" class="btn btn-primary">Drukuj</button>
+        }
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <p class="text-success">@TempData["SuccessMessage"]</p>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <p class="text-danger">@TempData["ErrorMessage"]</p>
+        }
+
+    }
+    else
+    {
+        <p>Zaloguj się, aby uzyskać dostęp do dodatkowych funkcji.</p>
+    }
 </div>

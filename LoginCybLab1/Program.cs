@@ -87,6 +87,7 @@ namespace LoginCybLab1
             app.UseRouting();
 
             app.UseSession();
+            app.UseAuthentication();
             app.UseAuthorization();
             
 
