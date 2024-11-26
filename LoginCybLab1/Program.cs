@@ -173,8 +173,35 @@ namespace LoginCybLab1
                     user.Email = email;
                     user.EmailConfirmed = true;
                     user.MustChangePassword = false;
-                user.LockoutEnabled = true;
+                    user.LockoutEnabled = true;
                     user.AccessFailedCount = 5;
+                    user.IsDemoUser = true;
+
+
+
+                    await userManager.CreateAsync(user, password);
+
+                    await userManager.AddToRoleAsync(user, "User");
+                }
+            } 
+            
+            using (var scope = app.Services.CreateScope())
+            {
+                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+                string email = "demooo@test.com";
+                string password = "Admin123@";
+
+                if (await userManager.FindByEmailAsync(email) == null)
+                {
+                    var user = new ApplicationUser();
+                    user.UserName = email;
+                    user.Email = email;
+                    user.EmailConfirmed = true;
+                    user.MustChangePassword = false;
+                    user.LockoutEnabled = true;
+                    user.AccessFailedCount = 5;
+                    user.IsDemoUser = true;
 
 
 

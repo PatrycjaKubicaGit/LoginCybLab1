@@ -11,6 +11,7 @@ using LoginCybLab1.Views.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using System.Configuration;
 using LoginCybLab1.Models;
+using LoginCybLab1.Extensions;
 
 namespace LoginCybLab1.Controllers
 {
@@ -21,6 +22,7 @@ namespace LoginCybLab1.Controllers
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly IConfiguration _configuration;
         private readonly IUserActivityService _activityService;
+
 
         public UsersController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IConfiguration configuration, IUserActivityService activityService)
         {
@@ -44,6 +46,8 @@ namespace LoginCybLab1.Controllers
             var passwordOptions = _configuration.GetSection("PasswordPolicy").Get<PasswordPolicyViewModel>();
             return View(passwordOptions);
         }
+
+      
 
         // POST: Zapisanie nowych ustawień polityki haseł
         [HttpPost]
@@ -225,6 +229,34 @@ namespace LoginCybLab1.Controllers
 
             await _activityService.LogActivity(User.Identity.Name, "Lock User", $"Nieudana próba zablokowania użytkownika {user.UserName}.");
             return View("Index");
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetLicenceKey(string id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+
+            var normalizedKey = Vigenere.NormalizeInput(_configuration.GetValue<string>("Vinegere:Key"));
+            var normalizedText = Vigenere.NormalizeInput(user.NormalizedUserName);
+            var enc = Vigenere.Encrypt(normalizedText, normalizedKey);
+            await _activityService.LogActivity(User.Identity.Name, "DEMO", enc);
+            await _activityService.LogActivity(User.Identity.Name, "DEMO", Vigenere.Decrypt(enc, normalizedKey));
+
+            TempData["LicenceKey"] = enc;
+            TempData["UserID"] = id;
+            await _activityService.LogActivity(User.Identity.Name, "LICENCJA KLUCZ", enc);
+
+            return RedirectToAction("Index");
         }
 
         // ODBLOKOWANIE: Odblokowanie użytkownika
